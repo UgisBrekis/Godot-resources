@@ -36,7 +36,7 @@ func _draw():
 			var a = (get_curve().get_point_pos(0) - get_curve().get_baked_points()[p]).normalized()
 			var b = (get_curve().get_baked_points()[p+1] - get_curve().get_baked_points()[p]).normalized()
 			
-			n = (a+b).normalized()*bakeInterval/2
+			n = Vector2(-(b-a).normalized().y, (b-a).normalized().x)*bakeInterval/2
 			
 			#Fix normal direction
 			if get_curve().get_baked_points()[p].y + n.y > get_curve().get_baked_points()[p].y:
@@ -48,7 +48,7 @@ func _draw():
 			var a = (get_curve().get_baked_points()[p-1] - get_curve().get_baked_points()[p]).normalized()
 			var b = (get_curve().get_baked_points()[p+1] - get_curve().get_baked_points()[p]).normalized()
 			
-			n = (a+b).normalized()*bakeInterval/2
+			n = Vector2(-(b-a).normalized().y, (b-a).normalized().x)*bakeInterval/2
 			
 			#Fix normal direction
 			if get_curve().get_baked_points()[p].y + n.y > get_curve().get_baked_points()[p].y:
