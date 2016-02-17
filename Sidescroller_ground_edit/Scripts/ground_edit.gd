@@ -7,6 +7,8 @@ export(bool) var debug = true setget setDebug
 
 var bakeInterval = 64
 
+var font = preload("res://font.fnt")
+
 
 
 
@@ -34,11 +36,12 @@ func _draw():
 			var a = (get_curve().get_point_pos(0) - get_curve().get_baked_points()[p]).normalized()
 			var b = (get_curve().get_baked_points()[p+1] - get_curve().get_baked_points()[p]).normalized()
 			
+			n = (a+b).normalized()*bakeInterval/2
+			
 			#Fix normal direction
 			if get_curve().get_baked_points()[p].y + n.y > get_curve().get_baked_points()[p].y:
 				n = -n
 			
-			n = (a+b).normalized()*bakeInterval/2
 			normals.push_back(n)
 			
 		elif p > 0 && p < get_curve().get_baked_points().size()-1:
@@ -77,6 +80,20 @@ func _draw():
 	
 	for p in range(normals.size()-1):
 		draw_polygon(polyArray[p], colArray, uvArray, texture)
+		
+		
+	#Create collisions
+	var collisionPoly = []
+	
+	for cp in range(polyArray.size()+1):
+		collisionPoly.push_back(get_curve().get_baked_points()[cp])
+	for cp in range(polyArray.size()+1):
+		collisionPoly.push_back(collisionPoly[polyArray.size()-cp] - normals[polyArray.size()-cp])
+
+	get_parent().get_node("CollisionPolygon2D").set_polygon(collisionPoly)
+	
+		
+		
 	
 	#Draws lines only when debug enabled
 	if debug:
@@ -92,6 +109,10 @@ func _draw():
 				
 		for n in range(normals.size()):
 			draw_line(get_curve().get_baked_points()[n], get_curve().get_baked_points()[n] - normals[n], Color(0, 1, 0), 1)
+			draw_string(font, get_curve().get_baked_points()[n] - normals[n], str(n))
+			
+		for p in range(get_curve().get_baked_points().size()):
+			draw_string(font, get_curve().get_baked_points()[p], str(p))
 	
 	
 func setBakeInterval(val):
