@@ -2,15 +2,21 @@ tool
 
 extends Path2D
 
-export(Texture) var texture = preload("res://Sprites/ground.png") setget setBakeInterval
+export(Texture) var texture = preload("res://Sprites/ground_03.png") setget setBakeInterval
+export(Texture) var textureL = preload("res://Sprites/ground_03_l.png")
+export(Texture) var textureR = preload("res://Sprites/ground_03_r.png")
+
+
 export(bool) var debug = true setget setDebug
 
-var bakeInterval = 64
+var bakeInterval = 128
 
 var font = preload("res://font.fnt")
 
 
-
+func _init():
+	var curve = get_curve()
+	set_curve(curve)
 
 func _ready():
 	get_curve().connect("changed", self, "updateCurve")
@@ -21,6 +27,12 @@ func updateCurve():
 	
 func setDebug(val):
 	debug = val
+	update()
+	
+func setBakeInterval(val):
+	texture = val
+	bakeInterval = texture.get_width()
+	get_curve().set_bake_interval(bakeInterval)
 	update()
 	
 	
@@ -43,6 +55,7 @@ func _draw():
 				n = -n
 			
 			normals.push_back(n)
+			
 			
 		elif p > 0 && p < get_curve().get_baked_points().size()-1:
 			var a = (get_curve().get_baked_points()[p-1] - get_curve().get_baked_points()[p]).normalized()
@@ -80,15 +93,59 @@ func _draw():
 	
 	for p in range(normals.size()-1):
 		draw_polygon(polyArray[p], colArray, uvArray, texture)
-		
-		
+	
+	
+	
+	#Start and end of the curve
+	var startNormal = (get_curve().get_baked_points()[0] - get_curve().get_point_pos(0)).rotated(PI/2)/2
+	
+	var sn1 = get_curve().get_point_pos(0) + startNormal
+	var sn2 = get_curve().get_baked_points()[0] + normals[0]
+	var sn3 = get_curve().get_baked_points()[0] - normals[0]
+	var sn4 = get_curve().get_point_pos(0) - startNormal
+	
+	var startPoly = [sn1, sn2, sn3, sn4]
+	
+	
+	
+	var endpoint = get_curve().get_baked_points()[get_curve().get_baked_points().size()-2]+(get_curve().get_baked_points()[get_curve().get_baked_points().size()-1] - get_curve().get_baked_points()[get_curve().get_baked_points().size()-2]).normalized()*bakeInterval
+	
+	var endNormal = (get_curve().get_baked_points()[get_curve().get_baked_points().size()-2]-endpoint).rotated(PI/2)/2
+	
+	var en1 = get_curve().get_baked_points()[get_curve().get_baked_points().size()-2] + normals[normals.size()-1]
+	var en2 = endpoint - endNormal
+	var en3 = endpoint + endNormal
+	var en4 = get_curve().get_baked_points()[get_curve().get_baked_points().size()-2] - normals[normals.size()-1]
+	
+	var endPoly = [en1, en2, en3, en4]
+	
+	#Actual drawing of the start and end of the curve
+	draw_polygon(startPoly, colArray, uvArray, textureL)
+	draw_polygon(endPoly, colArray, uvArray, textureR)
+	
+	
+	
+	
 	#Create collisions
 	var collisionPoly = []
 	
+	#Curve start
+	collisionPoly.push_back(get_curve().get_point_pos(0))
+	
+	#Baked points
 	for cp in range(polyArray.size()+1):
 		collisionPoly.push_back(get_curve().get_baked_points()[cp])
+		
+	#Curve end
+	collisionPoly.push_back(endpoint)
+	collisionPoly.push_back(en3)
+	
+	#Normals
 	for cp in range(polyArray.size()+1):
-		collisionPoly.push_back(collisionPoly[polyArray.size()-cp] - normals[polyArray.size()-cp])
+		collisionPoly.push_back(get_curve().get_baked_points()[polyArray.size()-cp] - normals[polyArray.size()-cp])
+		
+	#Last point
+	collisionPoly.push_back(sn4)
 
 	get_parent().get_node("CollisionPolygon2D").set_polygon(collisionPoly)
 	
@@ -113,9 +170,16 @@ func _draw():
 			
 		for p in range(get_curve().get_baked_points().size()):
 			draw_string(font, get_curve().get_baked_points()[p], str(p))
+			
+		#Starting point
+		draw_line(get_curve().get_point_pos(0), get_curve().get_point_pos(0)+startNormal, Color(1, 0.5, 0), 1)
+		draw_line(get_curve().get_point_pos(0), get_curve().get_point_pos(0)-startNormal, Color(1, 0.5, 0), 1)
+		draw_circle(get_curve().get_point_pos(0), 10, Color(1, 0.5, 0))
+		
+		#Endpoint
+		draw_line(endpoint, endpoint+endNormal, Color(0.5, 0, 1), 1)
+		draw_line(endpoint, endpoint-endNormal, Color(0.5, 0, 1), 1)
+		draw_circle(endpoint, 10, Color(0.5, 0, 1))
 	
 	
-func setBakeInterval(val):
-	texture = val
-	bakeInterval = texture.get_width()
 
